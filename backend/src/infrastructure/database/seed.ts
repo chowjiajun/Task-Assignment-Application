@@ -8,13 +8,13 @@ async function seed() {
         { name: "Bob" },
         { name: "Carol" },
         { name: "Dave" },
-    ]);
+    ]).onConflictDoNothing();
 
     // Insert skills
     await db.insert(skills).values([
         { name: "Frontend" },
         { name: "Backend" },
-    ]);
+    ]).onConflictDoNothing();
 
     console.log("Database seeded successfully");
 }

@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, timestamp } from "drizzle-orm/pg-core";
 
 export const developers = pgTable("developers", {
     id: serial("id").primaryKey(),
@@ -11,7 +11,7 @@ export const tasks = pgTable("tasks", {
     id: serial("id").primaryKey(),
     title: varchar("title", { length: 255 }).notNull(),
     status: varchar("status", { length: 50 }).notNull(),
-    assignedTo: serial("assigned_to").references(() => developers.id),
+    assignedTo: integer("assigned_to").references(() => developers.id),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

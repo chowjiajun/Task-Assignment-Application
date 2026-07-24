@@ -15,12 +15,6 @@ interface Config {
     DATABASE_HOST: string;
     DATABASE_PORT: number;
     DATABASE_NAME: string;
-    DATABASE_LOGGING: boolean;
-    DATABASE_DIALECT: 'postgres' | 'mysql' | 'sqlite' | 'mariadb' | 'mssql';
-    DATABASE_POOLING_MIN: number;
-    DATABASE_POOLING_MAX: number;
-    DATABASE_POOLING_ACQUIRE: number;
-    DATABASE_POOLING_IDLE: number;
 }
 
 /**
@@ -78,12 +72,6 @@ const DATABASE_PASSWORD = validateRequiredString(process.env.DATABASE_PASSWORD, 
 const DATABASE_HOST = validateRequiredString(process.env.DATABASE_HOST, 'DATABASE_HOST');
 const DATABASE_PORT = validateNumber(process.env.DATABASE_PORT, 'DATABASE_PORT');
 const DATABASE_NAME = validateRequiredString(process.env.DATABASE_NAME, 'DATABASE_NAME');
-const DATABASE_LOGGING = validateExpectedValues(process.env.DATABASE_LOGGING, 'DATABASE_LOGGING', ['true', 'false']) === 'true';
-const DATABASE_DIALECT = validateExpectedValues(process.env.DATABASE_DIALECT, 'DATABASE_DIALECT', ['postgres', 'mysql', 'sqlite', 'mariadb', 'mssql']) as 'postgres' | 'mysql' | 'sqlite' | 'mariadb' | 'mssql';
-const DATABASE_POOLING_MIN = validateNumber(process.env.DATABASE_POOLING_MIN, 'DATABASE_POOLING_MIN');
-const DATABASE_POOLING_MAX = validateNumber(process.env.DATABASE_POOLING_MAX, 'DATABASE_POOLING_MAX');
-const DATABASE_POOLING_ACQUIRE = validateNumber(process.env.DATABASE_POOLING_ACQUIRE, 'DATABASE_POOLING_ACQUIRE');
-const DATABASE_POOLING_IDLE = validateNumber(process.env.DATABASE_POOLING_IDLE, 'DATABASE_POOLING_IDLE');
 
 export const config: Config = {
     ENVIRONMENT,
@@ -92,11 +80,5 @@ export const config: Config = {
     DATABASE_PASSWORD,
     DATABASE_HOST,
     DATABASE_PORT,
-    DATABASE_NAME,
-    DATABASE_LOGGING,
-    DATABASE_DIALECT,
-    DATABASE_POOLING_MIN,
-    DATABASE_POOLING_MAX,
-    DATABASE_POOLING_ACQUIRE,
-    DATABASE_POOLING_IDLE,
+    DATABASE_NAME
 };

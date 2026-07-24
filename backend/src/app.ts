@@ -1,11 +1,21 @@
 import express from "express";
 import helmet from "helmet";
 import { config } from "./config/env.js";
+import { globalErrorHandler } from "./middlewares/global-error-handling.js";
+
+// Router imports
+import developerRouter from "./modules/developers/router.js";
 
 const app = express();
 
 // Use helmet middleware for security
 app.use(helmet());
+
+// Import and use routes
+app.use("/developer", developerRouter);
+
+// Global error handling middleware
+app.use(globalErrorHandler);
 
 // Start the server
 app.listen(config.EXPRESS_PORT, () => {

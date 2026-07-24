@@ -17,7 +17,7 @@ export function validateBody<T>(schema: JSONSchemaType<T>) {
                     message: BAD_REQUEST,
 
                     // Best practice is to not expose validation errors in production
-                    errors: validate.errors?.map(error => (error.message))
+                    errors: validate.errors?.map(error => `${error.instancePath.replace('/', '')}: ${error.message}`)
                 });
                 return;
             }

@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize';
-import { config } from '../config/env.js';
+import { config } from '../../config/env.js';
 
 const sequelize = new Sequelize(
     config.DATABASE_NAME,
@@ -11,7 +11,10 @@ const sequelize = new Sequelize(
         dialect: config.DATABASE_DIALECT,
         logging: config.DATABASE_LOGGING ? console.log : false, 
         pool: {
-            max: config.DATABASE_POOLING_MAX
+            min: config.DATABASE_POOLING_MIN,
+            max: config.DATABASE_POOLING_MAX,
+            acquire: config.DATABASE_POOLING_ACQUIRE,
+            idle: config.DATABASE_POOLING_IDLE
         }
     }
 );

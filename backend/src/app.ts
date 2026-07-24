@@ -5,6 +5,7 @@ import { globalErrorHandler } from "./middlewares/global-error-handling.js";
 
 // Router imports
 import developerRouter from "./modules/developers/router.js";
+import skillRouter from "./modules/skills/router.js";
 
 const app = express();
 
@@ -12,7 +13,8 @@ const app = express();
 app.use(helmet());
 
 // Import and use routes
-app.use("/developer", developerRouter);
+app.use("/developers", developerRouter);
+app.use("/skills", skillRouter);
 
 // Global error handling middleware
 app.use(globalErrorHandler);

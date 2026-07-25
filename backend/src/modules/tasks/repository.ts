@@ -1,24 +1,60 @@
 import { db } from "../../infrastructure/database/index.js";
 import { tasks, taskSkills } from "../../infrastructure/database/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import type { CreateTaskRequest, UpdateTaskRequest } from "./types.js";
 
-export async function createTask(taskData: CreateTaskRequest) {
-    const [createdTask] = await db.insert(tasks).values({
-        title: taskData.title,
-        status: taskData.status,
-        assignedTo: taskData.assignedTo ?? null,
-    }).returning({ id: tasks.id });
+async function insertSubTasksRecursively(tx: any, parentId: number, subTasks: any[] | null | undefined) {
+    if (!subTasks || subTasks.length === 0) return;
 
-    // Insert task skills if any
-    if (createdTask && taskData.skillsRequired && taskData.skillsRequired.length > 0) {
-        await db.insert(taskSkills).values(
-            taskData.skillsRequired.map((skillName) => ({
-                taskId: createdTask.id,
-                skillName,
-            }))
-        );
+    for (const subTask of subTasks) {
+        const [createdSubTask] = await tx.insert(tasks).values({
+            title: subTask.title,
+            status: subTask.status,
+            assignedTo: subTask.assignedTo ?? null,
+            parentTaskId: parentId,
+        }).returning({ id: tasks.id });
+
+        // Insert sub-task skills if any
+        if (createdSubTask && subTask.skillsRequired && subTask.skillsRequired.length > 0) {
+            await tx.insert(taskSkills).values(
+                subTask.skillsRequired.map((skillName: string) => ({
+                    taskId: createdSubTask.id,
+                    skillName,
+                }))
+            );
+        }
+
+        // Recursively insert nested sub-tasks if any
+        if (createdSubTask && subTask.subTasks && subTask.subTasks.length > 0) {
+            await insertSubTasksRecursively(tx, createdSubTask.id, subTask.subTasks);
+        }
     }
+}
+
+export async function createTaskWithSubTasks(taskData: CreateTaskRequest) {
+    // Transaction to ensure that the main task and its sub-tasks are created atomically
+    await db.transaction(async (tx) => {
+        const [parentTask] = await tx.insert(tasks).values({
+            title: taskData.title,
+            status: taskData.status,
+            assignedTo: taskData.assignedTo ?? null,
+        }).returning({ id: tasks.id });
+
+        // Insert parent task skills if any
+        if (parentTask && taskData.skillsRequired && taskData.skillsRequired.length > 0) {
+            await tx.insert(taskSkills).values(
+                taskData.skillsRequired.map((skillName) => ({
+                    taskId: parentTask.id,
+                    skillName,
+                }))
+            );
+        }
+
+        // Insert all nested sub-tasks recursively
+        if (parentTask && taskData.subTasks && taskData.subTasks.length > 0) {
+            await insertSubTasksRecursively(tx, parentTask.id, taskData.subTasks);
+        }
+    });
 }
 
 export async function getAllTasks() {
@@ -27,10 +63,11 @@ export async function getAllTasks() {
         title: tasks.title,
         status: tasks.status,
         assignedTo: tasks.assignedTo,
+        parentTaskId: tasks.parentTaskId,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
         skillName: taskSkills.skillName,
-    }).from(tasks).leftJoin(taskSkills, eq(taskSkills.taskId, tasks.id));
+    }).from(tasks).leftJoin(taskSkills, eq(taskSkills.taskId, tasks.id)).orderBy(desc(tasks.id));
 
     // Because of the left join, we may have multiple rows for the same task if it has multiple skills.
     const taskMap = new Map<number, {
@@ -38,6 +75,7 @@ export async function getAllTasks() {
         title: string;
         status: string;
         assignedTo: number | null;
+        parentTaskId: number | null;
         createdAt: Date;
         updatedAt: Date;
         skillsRequired: string[];
@@ -53,6 +91,7 @@ export async function getAllTasks() {
                 title: row.title,
                 status: row.status,
                 assignedTo: row.assignedTo,
+                parentTaskId: row.parentTaskId,
                 createdAt: row.createdAt,
                 updatedAt: row.updatedAt,
                 skillsRequired: row.skillName ? [row.skillName] : [],
@@ -77,14 +116,28 @@ export async function getTaskById(id: number) {
 
 export async function updateTaskById(id: number, taskData: UpdateTaskRequest) {
     const updatedTask = await db.update(tasks).set({
-            status: taskData.status,
-            assignedTo: taskData.assignedTo ?? null,
-            updatedAt: new Date(),
-        }).where(eq(tasks.id, id)).returning({ id: tasks.id });
+        status: taskData.status,
+        assignedTo: taskData.assignedTo ?? null,
+        updatedAt: new Date(),
+    }).where(eq(tasks.id, id)).returning({ id: tasks.id });
 
     if (updatedTask.length === 0) {
         return null;
     }
 
     return updatedTask[0];
+}
+
+export async function getSubTasksByParentId(parentTaskId: number) {
+    const subTasks = await db.select({
+        id: tasks.id,
+        title: tasks.title,
+        status: tasks.status,
+        assignedTo: tasks.assignedTo,
+        parentTaskId: tasks.parentTaskId,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+    }).from(tasks).where(eq(tasks.parentTaskId, parentTaskId))
+
+    return subTasks;
 }

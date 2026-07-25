@@ -9,12 +9,3 @@ export async function retrieveSkillByName(skill: string) {
         where: (skills, { eq }) => eq(skills.name, skill)
     });
 }
-
-export async function retrieveSkillsByNames(skillNames: string[]) {
-    if (skillNames.length === 0) {
-        return [];
-    }
-    return await db.query.skills.findMany({
-        where: (skills, { inArray }) => inArray(skills.name, skillNames)
-    });
-}

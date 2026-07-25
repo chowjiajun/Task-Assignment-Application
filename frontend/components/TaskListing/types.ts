@@ -4,4 +4,5 @@ export type Task = {
     skills: string[];
     status: string;
     assigneeId: number | null;
+    subTasks: Task[];
 };

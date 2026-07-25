@@ -1,9 +1,18 @@
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { getDeveloperById } from './service.js';
+import { getAllDevelopers, getDeveloperById } from './service.js';
 import { HTTP_400 } from '../../constants/http-status.js';
 
 const router = express.Router();
+
+router.get('/list', async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+        const developers = await getAllDevelopers();
+        res.json(developers);
+    } catch (error) {
+        next(error);
+    }
+});
 
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     if (!req.params.id || Number.isNaN(Number(req.params.id))) {

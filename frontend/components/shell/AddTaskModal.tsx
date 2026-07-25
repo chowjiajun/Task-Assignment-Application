@@ -80,6 +80,7 @@ export default function AddTaskModal({ opened, close }: Readonly<{ opened: boole
                         placeholder="Task title"
                         key={form.key('title')}
                         {...form.getInputProps('title')}
+                        required
                     />
 
                     <MultiSelect

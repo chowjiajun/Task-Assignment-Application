@@ -5,10 +5,11 @@ import { TASK_STATUS } from "./constants.js";
 export const CREATE_TASK_REQUEST_SCHEMA: JSONSchemaType<CreateTaskRequest> = {
     type: "object",
     properties: {
-        title: { type: "string" },
+        title: { type: "string", minLength: 1 },
         status: { type: "string", enum: Object.values(TASK_STATUS) },
+        skillsRequired: { type: "array", items: { type: "string" } },
         assignedTo: { type: "integer", nullable: true }
     },
-    required: ["title", "status"],
+    required: ["title", "status", "skillsRequired"],
     additionalProperties: false
 };

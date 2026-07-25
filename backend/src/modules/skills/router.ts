@@ -1,9 +1,18 @@
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { getSkillByName } from './service.js';
+import { getAllSkills, getSkillByName } from './service.js';
 import { HTTP_400, HTTP_404 } from '../../constants/http-status.js';
 
 const router = express.Router();
+
+router.get('/list', async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+        const skills = await getAllSkills();
+        res.json(skills);
+    } catch (error) {
+        next(error);
+    }
+});
 
 router.get('/:skill', async (req: Request, res: Response, next: NextFunction) => {
     const skill = req.params.skill;

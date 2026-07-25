@@ -5,10 +5,14 @@ export function corsMiddleware(req: Request, res: Response, next: NextFunction) 
     // Only allow CORS in development environment
     if (config.ENVIRONMENT === 'development') {
         res.header('Access-Control-Allow-Origin', '*');
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
         res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        next();
-    } else {
-        next();
+
+        // Respond to preflight requests without passing to route handlers
+        if (req.method === 'OPTIONS') {
+            return res.sendStatus(204);
+        }
     }
+
+    next();
 }

@@ -42,7 +42,7 @@ export default function TaskRow({ task, statusOptions, assigneeOptions, updateTa
                         data={statusOptions ?? []}
                         value={task.status}
                         onChange={(value) => handleUpdate({ ...task, status: value ?? '' })}
-                        w={160}
+                        w="100%"
                     />
                 </Table.Td>
                 <Table.Td>
@@ -52,7 +52,7 @@ export default function TaskRow({ task, statusOptions, assigneeOptions, updateTa
                         placeholder="Unassigned"
                         clearable
                         onChange={(value) => handleUpdate({ ...task, assigneeId: value ? Number(value) : null })}
-                        w={180}
+                        w="100%"
                     />
                 </Table.Td>
             </Table.Tr>

@@ -65,13 +65,13 @@ export default function TaskListing({ tasksFromApi, tasksLoading, tasksError, re
 
     return (
         <Stack>
-            <Table striped highlightOnHover withTableBorder>
+            <Table striped highlightOnHover withTableBorder style={{ tableLayout: 'fixed' }}>
                 <Table.Thead>
                     <Table.Tr>
-                        <Table.Th>Title</Table.Th>
-                        <Table.Th>Skills</Table.Th>
-                        <Table.Th>Status</Table.Th>
-                        <Table.Th>Assignee</Table.Th>
+                        <Table.Th w="50%">Title</Table.Th>
+                        <Table.Th w="20%">Skills</Table.Th>
+                        <Table.Th w="15%">Status</Table.Th>
+                        <Table.Th w="15%">Assignee</Table.Th>
                     </Table.Tr>
                 </Table.Thead>
                 <TaskListingBody

@@ -1,9 +1,10 @@
 import { AppShell, Flex, Title, ActionIcon } from '@mantine/core';
+import type { ReactNode } from 'react';
 import { useDisclosure } from '@mantine/hooks';
 import { PlusIcon } from '@phosphor-icons/react';
 import AddTaskModal from './AddTaskModal';
 
-export default function Shell() {
+export default function Shell({ children, refetch }: Readonly<{ children: ReactNode; refetch: () => void }>) {
     const [opened, { open, close }] = useDisclosure(false);
 
     return (
@@ -18,11 +19,13 @@ export default function Shell() {
                         <PlusIcon style={{ width: '70%', height: '70%' }} />
                     </ActionIcon>
 
-                    <AddTaskModal opened={opened} close={close} />
+                    <AddTaskModal opened={opened} close={close} refetch={refetch} />
                 </Flex>
             </AppShell.Header>
 
-            <AppShell.Main>Main</AppShell.Main>
+            <AppShell.Main>
+                {children}
+            </AppShell.Main>
         </AppShell>
     );
 }

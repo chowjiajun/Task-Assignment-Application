@@ -6,3 +6,8 @@ export interface CreateTaskRequest {
     skillsRequired: string[];
     assignedTo?: number | null;
 }
+
+export interface UpdateTaskRequest {
+    status: TaskStatus;
+    assignedTo?: number | null;
+}

@@ -2,6 +2,7 @@ import express from "express";
 import helmet from "helmet";
 import { config } from "./config/env.js";
 import { globalErrorHandler } from "./middlewares/global-error-handling.js";
+import { corsMiddleware } from "./middlewares/cors.js";
 
 // Router imports
 import developerRouter from "./modules/developers/router.js";
@@ -12,6 +13,9 @@ const app = express();
 
 // Use helmet middleware for security
 app.use(helmet());
+
+// Enable CORS for all routes
+app.use(corsMiddleware);
 
 // Middleware to parse JSON requests
 app.use(express.json());

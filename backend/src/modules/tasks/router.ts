@@ -5,6 +5,7 @@ import type { CreateTaskRequest } from './types.js';
 import { CREATE_TASK_REQUEST_SCHEMA } from './validation.js';
 import { validateBody } from '../../middlewares/validate-request.js';
 import { createTask, getTaskById } from './service.js';
+import { InvalidSkillsError } from './errors.js';
 import { PostgresForeignKeyViolationError } from '../../errors/database.js';
 const router = express.Router();
 
@@ -13,7 +14,9 @@ router.post('/create', validateBody<CreateTaskRequest>(CREATE_TASK_REQUEST_SCHEM
     try {
         await createTask(taskData);
     } catch (error) {
-        if (error instanceof PostgresForeignKeyViolationError) {
+        if (error instanceof InvalidSkillsError) {
+            return res.status(HTTP_400).json({ error: error.message });
+        } else if (error instanceof PostgresForeignKeyViolationError) {
             return res.status(HTTP_400).json({ error: 'Assigned developer does not exist' });
         } else {
             next(error);

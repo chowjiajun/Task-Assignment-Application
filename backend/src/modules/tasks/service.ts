@@ -1,11 +1,21 @@
 import type { CreateTaskRequest } from "./types.js";
 import { createTask as createTaskInRepository, getTaskById as getTaskByIdInRepository } from "./repository.js";
+import { validateSkills } from "../skills/service.js";
+import { InvalidSkillsError } from "./errors.js";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { DatabaseError } from "pg";
 import { FOREIGN_KEY_VIOLATION } from "../../constants/postgres-error-codes.js";
 import { PostgresForeignKeyViolationError } from "../../errors/database.js";
 
 export async function createTask(taskData: CreateTaskRequest) {
+    // Validate that all required skills exist
+    try {
+        await validateSkills(taskData.skillsRequired);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Invalid skills";
+        throw new InvalidSkillsError(message);
+    }
+
     try {
         await createTaskInRepository(taskData);
     } catch (error) {

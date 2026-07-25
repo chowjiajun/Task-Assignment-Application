@@ -1,6 +1,6 @@
 import { db } from "../../infrastructure/database/index.js";
 import { tasks, taskSkills } from "../../infrastructure/database/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import type { CreateTaskRequest, UpdateTaskRequest } from "./types.js";
 
 async function insertSubTasksRecursively(tx: any, parentId: number, subTasks: any[] | null | undefined) {
@@ -63,10 +63,11 @@ export async function getAllTasks() {
         title: tasks.title,
         status: tasks.status,
         assignedTo: tasks.assignedTo,
+        parentTaskId: tasks.parentTaskId,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
         skillName: taskSkills.skillName,
-    }).from(tasks).leftJoin(taskSkills, eq(taskSkills.taskId, tasks.id));
+    }).from(tasks).leftJoin(taskSkills, eq(taskSkills.taskId, tasks.id)).orderBy(desc(tasks.id));
 
     // Because of the left join, we may have multiple rows for the same task if it has multiple skills.
     const taskMap = new Map<number, {
@@ -74,6 +75,7 @@ export async function getAllTasks() {
         title: string;
         status: string;
         assignedTo: number | null;
+        parentTaskId: number | null;
         createdAt: Date;
         updatedAt: Date;
         skillsRequired: string[];
@@ -89,6 +91,7 @@ export async function getAllTasks() {
                 title: row.title,
                 status: row.status,
                 assignedTo: row.assignedTo,
+                parentTaskId: row.parentTaskId,
                 createdAt: row.createdAt,
                 updatedAt: row.updatedAt,
                 skillsRequired: row.skillName ? [row.skillName] : [],
@@ -123,4 +126,18 @@ export async function updateTaskById(id: number, taskData: UpdateTaskRequest) {
     }
 
     return updatedTask[0];
+}
+
+export async function getSubTasksByParentId(parentTaskId: number) {
+    const subTasks = await db.select({
+        id: tasks.id,
+        title: tasks.title,
+        status: tasks.status,
+        assignedTo: tasks.assignedTo,
+        parentTaskId: tasks.parentTaskId,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+    }).from(tasks).where(eq(tasks.parentTaskId, parentTaskId))
+
+    return subTasks;
 }

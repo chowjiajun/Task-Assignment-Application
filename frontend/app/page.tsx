@@ -2,7 +2,7 @@
 
 import Shell from "@/components/Shell/Shell";
 import TaskListing from "@/components/TaskListing/TaskListing";
-import { apiUrl } from "@/lib/api";
+import { apiUrl } from "@/utils/api";
 import { useFetch } from "@mantine/hooks";
 import type { Task as TaskFromApi } from "@/types/api";
 

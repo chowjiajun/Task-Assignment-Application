@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Alert, Button, Group, Loader, Modal, Stack, Divider } from '@mantine/core';
+'use client';
+import { useEffect, useState } from 'react';
+import { Button, Group, Loader, Modal, Stack, Divider } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useFetch } from '@mantine/hooks';
-import { apiUrl } from '@/lib/api';
+import { notifications } from '@mantine/notifications';
+import { apiUrl, extractApiError } from '@/utils/api';
 import type { Developer, Skill } from '@/types/api';
 import { TaskInput } from './TaskInput';
 import { type TaskInputField, type FormValues } from './types';
@@ -12,11 +14,22 @@ export default function AddTaskModal({ opened, close, refetch }: Readonly<{ open
     const { data: skills, loading: skillsLoading, error: skillsError } = useFetch<Skill[]>(apiUrl('/skills/list'));
 
     const [submitting, setSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState<string | null>(null);
 
     const form = useForm<FormValues>({
         initialValues: { title: '', skillsRequired: [], assignedTo: null, subTasks: [] },
     });
+
+    // Show notification when fetch fails
+    const hasFetchError = developersError || skillsError;
+    useEffect(() => {
+        if (hasFetchError) {
+            notifications.show({
+                color: 'red',
+                title: 'Failed to load form data',
+                message: 'Could not fetch required data. Please try again later.',
+            });
+        }
+    }, [hasFetchError]);
 
     // Recursively strip frontend-only fields (id, subTasks nesting) for the API
     const toAPIBody = (subTasks: TaskInputField[]): object[] =>
@@ -30,7 +43,6 @@ export default function AddTaskModal({ opened, close, refetch }: Readonly<{ open
 
     const handleSubmit = async (values: FormValues) => {
         setSubmitting(true);
-        setSubmitError(null);
 
         try {
             const response = await fetch(apiUrl('/tasks/create'), {
@@ -45,20 +57,23 @@ export default function AddTaskModal({ opened, close, refetch }: Readonly<{ open
                 }),
             });
 
-            if (!response.ok) throw new Error((await response.json()).error || 'Failed to create task');
+            if (!response.ok) throw new Error(await extractApiError(response));
 
             form.reset();
             close();
             refetch();
         } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : 'An error occurred');
+            notifications.show({
+                color: 'red',
+                title: 'Failed to create task',
+                message: error instanceof Error ? error.message : 'An error occurred',
+            });
         } finally {
             setSubmitting(false);
         }
     };
 
     const isLoading = developersLoading || skillsLoading;
-    const hasFetchError = developersError || skillsError;
 
     return (
         <Modal opened={opened} onClose={close} title="Add New Task" size="xl">
@@ -66,15 +81,6 @@ export default function AddTaskModal({ opened, close, refetch }: Readonly<{ open
                 <Stack align="center" py="xl"><Loader /></Stack>
             ) : (
                 <form onSubmit={form.onSubmit(handleSubmit)}>
-                    {hasFetchError && (
-                        <Alert color="red" title="Failed to load form data">
-                            Could not fetch required data. Please try again later.
-                        </Alert>
-                    )}
-                    {submitError && (
-                        <Alert color="red" title="Failed to create task" mb="md">{submitError}</Alert>
-                    )}
-
                     <TaskInput
                         form={form}
                         fieldPath=""

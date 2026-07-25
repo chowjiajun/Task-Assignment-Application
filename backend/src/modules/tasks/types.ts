@@ -12,3 +12,13 @@ export interface UpdateTaskRequest {
     status: TaskStatus;
     assignedTo?: number | null;
 }
+
+export interface Task {
+    id: number;
+    title: string;
+    status: TaskStatus;
+    assignedTo: number | null;
+    parentTaskId: number | null;
+    skillsRequired: string[];
+    subTasks: Task[];
+}

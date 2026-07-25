@@ -1,9 +1,10 @@
 'use client';
 
-import { Alert, Loader, Stack, Table } from '@mantine/core';
+import { useEffect, useMemo } from 'react';
+import { Loader, Stack, Table } from '@mantine/core';
 import { useFetch } from '@mantine/hooks';
-import { useMemo } from 'react';
-import { apiUrl } from '@/lib/api';
+import { notifications } from '@mantine/notifications';
+import { apiUrl, extractApiError } from '@/utils/api';
 import type { Developer, Task as TaskFromApi } from '@/types/api';
 import TaskListingBody from './TaskListingBody';
 import type { Task } from './types';
@@ -17,19 +18,20 @@ export default function TaskListing({ tasksFromApi, tasksLoading, tasksError, re
     const { data: developers, loading: developersLoading, error: developersError } = useFetch<Developer[]>(apiUrl('/developers/list'));
     const { data: statusOptions, loading: statusesLoading, error: statusesError } = useFetch<string[]>(apiUrl('/tasks/statuses'));
 
-    // Conditions
     const isLoading = tasksLoading || developersLoading || statusesLoading;
     const hasLoadError = Boolean(tasksError || developersError || statusesError);
 
-    const tasks = useMemo(() => {
-        return (tasksFromApi ?? []).map((task) => ({
-            id: task.id,
-            title: task.title,
-            skills: task.skillsRequired,
-            status: task.status,
-            assigneeId: task.assignedTo,
-        }));
-    }, [tasksFromApi]);
+    useEffect(() => {
+        if (hasLoadError) {
+            notifications.show({
+                color: 'red',
+                title: 'Failed to load tasks',
+                message: 'Could not retrieve tasks. Please try again later.',
+            });
+        }
+    }, [hasLoadError]);
+
+    const tasks = useMemo(() => (tasksFromApi ?? []).map(toLocalTask), [tasksFromApi]);
 
     const assigneeOptions = useMemo(() => {
         return (developers ?? []).map((developer) => ({
@@ -47,15 +49,9 @@ export default function TaskListing({ tasksFromApi, tasksLoading, tasksError, re
                 assignedTo: task.assigneeId,
             }),
         });
-        
 
-        if (!response.ok) {
-            const responseBody = await response.json().catch(() => ({ error: 'Failed to update task' }));
-            throw new Error(responseBody.error || 'Failed to update task');
-        }
+        if (!response.ok) throw new Error(await extractApiError(response));
 
-        // Refresh the task list after a successful update
-        // To improve, instead of refetching just update local state
         refetchTasks(); 
     };
 
@@ -64,14 +60,6 @@ export default function TaskListing({ tasksFromApi, tasksLoading, tasksError, re
             <Stack align="center" py="xl">
                 <Loader />
             </Stack>
-        );
-    }
-
-    if (hasLoadError) {
-        return (
-            <Alert color="red" title="Failed to load tasks">
-                Could not retrieve tasks. Please try again later.
-            </Alert>
         );
     }
 
@@ -91,8 +79,20 @@ export default function TaskListing({ tasksFromApi, tasksLoading, tasksError, re
                     statusOptions={statusOptions ?? []}
                     assigneeOptions={assigneeOptions}
                     updateTask={updateTask}
+                    depth={0}
                 />
             </Table>
         </Stack>
     );
+}
+
+function toLocalTask(apiTask: TaskFromApi): Task {
+    return {
+        id: apiTask.id,
+        title: apiTask.title,
+        skills: apiTask.skillsRequired,
+        status: apiTask.status,
+        assigneeId: apiTask.assignedTo,
+        subTasks: (apiTask.subTasks ?? []).map(toLocalTask),
+    };
 }

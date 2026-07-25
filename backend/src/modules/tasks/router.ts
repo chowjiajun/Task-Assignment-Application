@@ -5,7 +5,7 @@ import type { CreateTaskRequest, UpdateTaskRequest } from './types.js';
 import { CREATE_TASK_REQUEST_SCHEMA, UPDATE_TASK_REQUEST_SCHEMA } from './validation.js';
 import { validateBody } from '../../middlewares/validate-request.js';
 import { createTask, getAllTasks, getTaskById, getTaskStatuses, updateTaskById } from './service.js';
-import { InvalidSkillsError } from './errors.js';
+import { InvalidSkillsError, SubTasksNotDoneError } from './errors.js';
 import { PostgresForeignKeyViolationError } from '../../errors/database.js';
 const router = express.Router();
 
@@ -70,6 +70,8 @@ router.patch('/update/:id', validateBody<UpdateTaskRequest>(UPDATE_TASK_REQUEST_
     } catch (error) {
         if (error instanceof PostgresForeignKeyViolationError) {
             return res.status(HTTP_400).json({ error: 'Assigned developer does not exist' });
+        } else if (error instanceof SubTasksNotDoneError) {
+            return res.status(HTTP_400).json({ error: error.message });
         } else {
             next(error);
         }

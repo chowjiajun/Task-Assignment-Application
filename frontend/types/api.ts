@@ -12,5 +12,7 @@ export interface Task {
     title: string;
     status: string;
     assignedTo: number | null;
+    parentTaskId: number | null;
     skillsRequired: string[];
+    subTasks: Task[];
 }

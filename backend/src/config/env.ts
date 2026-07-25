@@ -15,6 +15,10 @@ interface Config {
     DATABASE_HOST: string;
     DATABASE_PORT: number;
     DATABASE_NAME: string;
+
+    // OpenAI variables
+    OPENAI_API_KEY: string;
+    OPENAI_MODEL: string;
 }
 
 /**
@@ -72,6 +76,8 @@ const DATABASE_PASSWORD = validateRequiredString(process.env.DATABASE_PASSWORD, 
 const DATABASE_HOST = validateRequiredString(process.env.DATABASE_HOST, 'DATABASE_HOST');
 const DATABASE_PORT = validateNumber(process.env.DATABASE_PORT, 'DATABASE_PORT');
 const DATABASE_NAME = validateRequiredString(process.env.DATABASE_NAME, 'DATABASE_NAME');
+const OPENAI_API_KEY = validateRequiredString(process.env.OPENAI_API_KEY, 'OPENAI_API_KEY');
+const OPENAI_MODEL = validateRequiredString(process.env.OPENAI_MODEL, 'OPENAI_MODEL');
 
 export const config: Config = {
     ENVIRONMENT,
@@ -80,5 +86,7 @@ export const config: Config = {
     DATABASE_PASSWORD,
     DATABASE_HOST,
     DATABASE_PORT,
-    DATABASE_NAME
+    DATABASE_NAME,
+    OPENAI_API_KEY,
+    OPENAI_MODEL
 };

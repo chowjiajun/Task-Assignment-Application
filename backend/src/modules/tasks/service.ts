@@ -13,9 +13,12 @@ import { DatabaseError } from "pg";
 import { FOREIGN_KEY_VIOLATION } from "../../constants/postgres-error-codes.js";
 import { PostgresForeignKeyViolationError } from "../../errors/database.js";
 import { TASK_STATUS, type TaskStatus } from "./constants.js";
+import { skillClassificationAgent } from "../../agents/skill-classification-agent/agent.js";
+
 
 export async function createTask(taskData: CreateTaskRequest) {
     await validateTaskSkills(taskData);
+    await classifyTaskSkills(taskData);
 
     try {
         await createTaskWithSubTasks(taskData);
@@ -67,6 +70,22 @@ function validateSubTaskSkillsRecursive(subTask: CreateTaskRequest, availableSki
     }
 }
 
+async function classifyTaskSkills(taskData: CreateTaskRequest) {
+    const results = await getAllSkills();
+    const availableSkills = results.map(skill => skill.name);
+
+    if (taskData.skillsRequired.length === 0) {
+        const classificationResult = await skillClassificationAgent.run(taskData.title, availableSkills);
+        taskData.skillsRequired = classificationResult.skills;
+    }
+
+    if (taskData.subTasks && taskData.subTasks.length > 0) {
+        for (const subTask of taskData.subTasks) {
+            await classifyTaskSkills(subTask);
+        }
+    }
+}
+
 export async function getTaskById(id: number) {
     return await getTaskByIdInRepository(id);
 }
@@ -91,7 +110,7 @@ export async function getAllTasks() {
         };
         taskMap.set(task.id, tempTask);
     }
-    
+
     // For each task inside map, find the parent and add the task to the parent's children array
     for (const task of taskMap.values()) {
         if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
@@ -101,7 +120,7 @@ export async function getAllTasks() {
             }
         }
     }
-    
+
     // Return only root tasks (tasks without a parent)
     return Array.from(taskMap.values()).filter(task => !task.parentTaskId);
 }

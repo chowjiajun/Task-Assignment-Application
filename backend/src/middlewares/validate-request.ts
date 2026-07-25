@@ -15,9 +15,12 @@ export function validateBody<T>(schema: JSONSchemaType<T>) {
             if (!valid) {
                 res.status(HTTP_400).json({
                     message: BAD_REQUEST,
-
-                    // Best practice is to not expose validation errors in production
-                    errors: validate.errors?.map(error => `${error.instancePath.replace('/', '')}: ${error.message}`)
+                    errors: validate.errors?.map(error => {
+                        const params = error.params as Record<string, unknown>;
+                        const additionalProperty = typeof params.additionalProperty === 'string' ? params.additionalProperty : undefined;
+                        const suffix = additionalProperty ? ` ('${additionalProperty}')` : '';
+                        return `${error.instancePath.replace('/', '')}: ${error.message}${suffix}`;
+                    })
                 });
                 return;
             }

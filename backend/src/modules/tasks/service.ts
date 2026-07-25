@@ -13,29 +13,6 @@ import { FOREIGN_KEY_VIOLATION } from "../../constants/postgres-error-codes.js";
 import { PostgresForeignKeyViolationError } from "../../errors/database.js";
 import { TASK_STATUS } from "./constants.js";
 
-async function validateTaskSkills(taskData: CreateTaskRequest) {
-    const results = await getAllSkills();
-    const availableSkills = new Set(results.map(skill => skill.name));
-
-    // Validate main task's required skills
-    for (const skill of taskData.skillsRequired) {
-        if (!availableSkills.has(skill)) {
-            throw new InvalidSkillsError(`The following skills do not exist: ${skill}`);
-        }
-    }
-
-    // Validate sub-task skills
-    if (taskData.subTasks && taskData.subTasks.length > 0) {
-        for (const subTask of taskData.subTasks) {
-            for (const skill of subTask.skillsRequired) {
-                if (!availableSkills.has(skill)) {
-                    throw new InvalidSkillsError(`The following skills do not exist in sub-task: ${skill}`);
-                }
-            }
-        }
-    }
-}
-
 export async function createTask(taskData: CreateTaskRequest) {
     await validateTaskSkills(taskData);
 
@@ -51,6 +28,40 @@ export async function createTask(taskData: CreateTaskRequest) {
             }
         } else {
             throw error;
+        }
+    }
+}
+
+async function validateTaskSkills(taskData: CreateTaskRequest) {
+    // Seperating the first level of skills because we have to retrieve all skills from the database 
+    const results = await getAllSkills();
+    const availableSkills = new Set(results.map(skill => skill.name));
+
+    // Validate main task's required skills
+    for (const skill of taskData.skillsRequired) {
+        if (!availableSkills.has(skill)) {
+            throw new InvalidSkillsError(`The following skills do not exist: ${skill}`);
+        }
+    }
+
+    // Validate all nested sub-task skills recursively
+    if (taskData.subTasks && taskData.subTasks.length > 0) {
+        for (let i = 0; i < taskData.subTasks.length; i++) {
+            validateSubTaskSkillsRecursive(taskData.subTasks[i]!, availableSkills, `sub-task ${i + 1}`);
+        }
+    }
+}
+
+function validateSubTaskSkillsRecursive(subTask: CreateTaskRequest, availableSkills: Set<string>, path: string = "sub-task"): void {
+    for (const skill of subTask.skillsRequired) {
+        if (!availableSkills.has(skill)) {
+            throw new InvalidSkillsError(`The following skills do not exist in ${path}: ${skill}`);
+        }
+    }
+
+    if (subTask.subTasks && subTask.subTasks.length > 0) {
+        for (let i = 0; i < subTask.subTasks.length; i++) {
+            validateSubTaskSkillsRecursive(subTask.subTasks[i]!, availableSkills, `${path} (nested level ${i + 1})`);
         }
     }
 }

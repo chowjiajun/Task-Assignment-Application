@@ -3,6 +3,34 @@ import { tasks, taskSkills } from "../../infrastructure/database/schema.js";
 import { eq } from "drizzle-orm";
 import type { CreateTaskRequest, UpdateTaskRequest } from "./types.js";
 
+async function insertSubTasksRecursively(tx: any, parentId: number, subTasks: any[] | null | undefined) {
+    if (!subTasks || subTasks.length === 0) return;
+
+    for (const subTask of subTasks) {
+        const [createdSubTask] = await tx.insert(tasks).values({
+            title: subTask.title,
+            status: subTask.status,
+            assignedTo: subTask.assignedTo ?? null,
+            parentTaskId: parentId,
+        }).returning({ id: tasks.id });
+
+        // Insert sub-task skills if any
+        if (createdSubTask && subTask.skillsRequired && subTask.skillsRequired.length > 0) {
+            await tx.insert(taskSkills).values(
+                subTask.skillsRequired.map((skillName: string) => ({
+                    taskId: createdSubTask.id,
+                    skillName,
+                }))
+            );
+        }
+
+        // Recursively insert nested sub-tasks if any
+        if (createdSubTask && subTask.subTasks && subTask.subTasks.length > 0) {
+            await insertSubTasksRecursively(tx, createdSubTask.id, subTask.subTasks);
+        }
+    }
+}
+
 export async function createTaskWithSubTasks(taskData: CreateTaskRequest) {
     // Transaction to ensure that the main task and its sub-tasks are created atomically
     await db.transaction(async (tx) => {
@@ -22,26 +50,9 @@ export async function createTaskWithSubTasks(taskData: CreateTaskRequest) {
             );
         }
 
-        // Insert sub-tasks if any
+        // Insert all nested sub-tasks recursively
         if (parentTask && taskData.subTasks && taskData.subTasks.length > 0) {
-            for (const subTask of taskData.subTasks) {
-                const [createdSubTask] = await tx.insert(tasks).values({
-                    title: subTask.title,
-                    status: subTask.status,
-                    assignedTo: subTask.assignedTo ?? null,
-                    parentTaskId: parentTask.id,
-                }).returning({ id: tasks.id });
-
-                // Insert sub-task skills if any
-                if (createdSubTask && subTask.skillsRequired && subTask.skillsRequired.length > 0) {
-                    await tx.insert(taskSkills).values(
-                        subTask.skillsRequired.map((skillName) => ({
-                            taskId: createdSubTask.id,
-                            skillName,
-                        }))
-                    );
-                }
-            }
+            await insertSubTasksRecursively(tx, parentTask.id, taskData.subTasks);
         }
     });
 }

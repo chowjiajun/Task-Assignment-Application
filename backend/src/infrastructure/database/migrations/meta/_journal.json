@@ -15,6 +15,13 @@
       "when": 1784904628662,
       "tag": "0001_huge_rhodey",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784945552272,
+      "tag": "0002_free_vector",
+      "breakpoints": true
     }
   ]
 }

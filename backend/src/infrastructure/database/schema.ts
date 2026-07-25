@@ -28,3 +28,10 @@ export const developerSkills = pgTable("developer_skills", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const taskSkills = pgTable("task_skills", {
+    taskId: integer("task_id").references(() => tasks.id),
+    skillName: varchar("skill_name", { length: 255 }).references(() => skills.name),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

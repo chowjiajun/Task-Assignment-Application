@@ -7,11 +7,13 @@ export const developers = pgTable("developers", {
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const tasks = pgTable("tasks", {
+// Have to use any type for tasks because of the self-referencing foreign key (parentTaskId) which causes a circular reference issue with TypeScript.
+export const tasks: any = pgTable("tasks", {
     id: serial("id").primaryKey(),
     title: varchar("title", { length: 255 }).notNull(),
     status: varchar("status", { length: 50 }).notNull(),
     assignedTo: integer("assigned_to").references(() => developers.id),
+    parentTaskId: integer("parent_task_id").references((): any => tasks.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

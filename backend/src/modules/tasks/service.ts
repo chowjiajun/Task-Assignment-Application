@@ -1,11 +1,11 @@
 import type { CreateTaskRequest, UpdateTaskRequest } from "./types.js";
 import {
-    createTask as createTaskInRepository,
+    createTaskWithSubTasks,
     getAllTasks as getAllTasksInRepository,
     getTaskById as getTaskByIdInRepository,
     updateTaskById as updateTaskByIdInRepository,
 } from "./repository.js";
-import { validateSkills } from "../skills/service.js";
+import { getAllSkills } from "../skills/service.js";
 import { InvalidSkillsError } from "./errors.js";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { DatabaseError } from "pg";
@@ -13,17 +13,34 @@ import { FOREIGN_KEY_VIOLATION } from "../../constants/postgres-error-codes.js";
 import { PostgresForeignKeyViolationError } from "../../errors/database.js";
 import { TASK_STATUS } from "./constants.js";
 
-export async function createTask(taskData: CreateTaskRequest) {
-    // Validate that all required skills exist
-    try {
-        await validateSkills(taskData.skillsRequired);
-    } catch (error) {
-        const message = error instanceof Error ? error.message : "Invalid skills";
-        throw new InvalidSkillsError(message);
+async function validateTaskSkills(taskData: CreateTaskRequest) {
+    const results = await getAllSkills();
+    const availableSkills = new Set(results.map(skill => skill.name));
+
+    // Validate main task's required skills
+    for (const skill of taskData.skillsRequired) {
+        if (!availableSkills.has(skill)) {
+            throw new InvalidSkillsError(`The following skills do not exist: ${skill}`);
+        }
     }
 
+    // Validate sub-task skills
+    if (taskData.subTasks && taskData.subTasks.length > 0) {
+        for (const subTask of taskData.subTasks) {
+            for (const skill of subTask.skillsRequired) {
+                if (!availableSkills.has(skill)) {
+                    throw new InvalidSkillsError(`The following skills do not exist in sub-task: ${skill}`);
+                }
+            }
+        }
+    }
+}
+
+export async function createTask(taskData: CreateTaskRequest) {
+    await validateTaskSkills(taskData);
+
     try {
-        await createTaskInRepository(taskData);
+        await createTaskWithSubTasks(taskData);
     } catch (error) {
         // Drizzle doesnt throw a specific error for foreign key violations, so we need to check the error code from the underlying database error
         if (error instanceof DrizzleQueryError) {

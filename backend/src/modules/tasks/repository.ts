@@ -3,22 +3,47 @@ import { tasks, taskSkills } from "../../infrastructure/database/schema.js";
 import { eq } from "drizzle-orm";
 import type { CreateTaskRequest, UpdateTaskRequest } from "./types.js";
 
-export async function createTask(taskData: CreateTaskRequest) {
-    const [createdTask] = await db.insert(tasks).values({
-        title: taskData.title,
-        status: taskData.status,
-        assignedTo: taskData.assignedTo ?? null,
-    }).returning({ id: tasks.id });
+export async function createTaskWithSubTasks(taskData: CreateTaskRequest) {
+    // Transaction to ensure that the main task and its sub-tasks are created atomically
+    await db.transaction(async (tx) => {
+        const [parentTask] = await tx.insert(tasks).values({
+            title: taskData.title,
+            status: taskData.status,
+            assignedTo: taskData.assignedTo ?? null,
+        }).returning({ id: tasks.id });
 
-    // Insert task skills if any
-    if (createdTask && taskData.skillsRequired && taskData.skillsRequired.length > 0) {
-        await db.insert(taskSkills).values(
-            taskData.skillsRequired.map((skillName) => ({
-                taskId: createdTask.id,
-                skillName,
-            }))
-        );
-    }
+        // Insert parent task skills if any
+        if (parentTask && taskData.skillsRequired && taskData.skillsRequired.length > 0) {
+            await tx.insert(taskSkills).values(
+                taskData.skillsRequired.map((skillName) => ({
+                    taskId: parentTask.id,
+                    skillName,
+                }))
+            );
+        }
+
+        // Insert sub-tasks if any
+        if (parentTask && taskData.subTasks && taskData.subTasks.length > 0) {
+            for (const subTask of taskData.subTasks) {
+                const [createdSubTask] = await tx.insert(tasks).values({
+                    title: subTask.title,
+                    status: subTask.status,
+                    assignedTo: subTask.assignedTo ?? null,
+                    parentTaskId: parentTask.id,
+                }).returning({ id: tasks.id });
+
+                // Insert sub-task skills if any
+                if (createdSubTask && subTask.skillsRequired && subTask.skillsRequired.length > 0) {
+                    await tx.insert(taskSkills).values(
+                        subTask.skillsRequired.map((skillName) => ({
+                            taskId: createdSubTask.id,
+                            skillName,
+                        }))
+                    );
+                }
+            }
+        }
+    });
 }
 
 export async function getAllTasks() {
@@ -77,10 +102,10 @@ export async function getTaskById(id: number) {
 
 export async function updateTaskById(id: number, taskData: UpdateTaskRequest) {
     const updatedTask = await db.update(tasks).set({
-            status: taskData.status,
-            assignedTo: taskData.assignedTo ?? null,
-            updatedAt: new Date(),
-        }).where(eq(tasks.id, id)).returning({ id: tasks.id });
+        status: taskData.status,
+        assignedTo: taskData.assignedTo ?? null,
+        updatedAt: new Date(),
+    }).where(eq(tasks.id, id)).returning({ id: tasks.id });
 
     if (updatedTask.length === 0) {
         return null;

@@ -11,11 +11,11 @@ import taskRouter from "./modules/tasks/router.js";
 
 const app = express();
 
-// Use helmet middleware for security
-app.use(helmet());
-
 // Enable CORS for all routes
 app.use(corsMiddleware);
+
+// Use helmet middleware for security
+app.use(helmet());
 
 // Middleware to parse JSON requests
 app.use(express.json());

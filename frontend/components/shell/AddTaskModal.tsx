@@ -3,10 +3,9 @@ import { Alert, Button, Group, Loader, Modal, MultiSelect, Select, Stack, TextIn
 import { useForm } from '@mantine/form';
 import { useFetch } from '@mantine/hooks';
 import { apiUrl } from '@/lib/api';
-import type { Developer } from '@/types/developer';
-import type { Skill } from '@/types/skill';
+import type { Developer, Skill } from '@/types/api';
 
-export default function AddTaskModal({ opened, close }: Readonly<{ opened: boolean; close: () => void }>) {
+export default function AddTaskModal({ opened, close, refetch }: Readonly<{ opened: boolean; close: () => void; refetch: () => void }>) {
     const { data: developers, loading: developersLoading, error: developersError } = useFetch<Developer[]>(apiUrl('/developers/list'));
     const { data: skills, loading: skillsLoading, error: skillsError } = useFetch<Skill[]>(apiUrl('/skills/list'));
     const [submitting, setSubmitting] = useState(false);
@@ -46,6 +45,7 @@ export default function AddTaskModal({ opened, close }: Readonly<{ opened: boole
 
             form.reset();
             close();
+            refetch();
         } catch (error) {
             setSubmitError(error instanceof Error ? error.message : 'An error occurred');
         } finally {

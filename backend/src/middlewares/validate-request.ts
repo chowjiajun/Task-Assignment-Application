@@ -1,6 +1,7 @@
 import { Ajv } from "ajv";
 import { HTTP_400, HTTP_500 } from "../constants/http-status.js";
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "../constants/error-messages.js";
+import { logger } from "../config/logger.js";
 import type { JSONSchemaType } from "ajv";
 import type { NextFunction, Request, Response } from "express";
 
@@ -26,7 +27,7 @@ export function validateBody<T>(schema: JSONSchemaType<T>) {
             }
         } catch (error) {
             // If there's an error during validation, respond with a 500 Internal Server Error
-            console.error("Validation error:", error);
+            logger.error("Validation middleware error", { error });
             res.status(HTTP_500).json({ message: INTERNAL_SERVER_ERROR });
             return;
         }

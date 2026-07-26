@@ -114,6 +114,7 @@ backend/
 ├── drizzle.config.ts          # Drizzle Kit configuration
 ├── package.json
 ├── tsconfig.json
+├── logs/                      # Auto-rotating log files (gitignored)
 └── src/
     ├── app.ts                 # Express app entry point
     ├── agents/
@@ -123,6 +124,7 @@ backend/
     │       └── schema.ts      # Response validation schema
     ├── config/
     │   ├── env.ts             # Environment variable loading & validation
+    │   ├── logger.ts          # Winston logging configuration
     │   └── openai.ts          # OpenAI client initialization
     ├── constants/
     │   ├── error-messages.ts  # Shared error message strings
@@ -211,6 +213,18 @@ The database consists of five tables:
 | `tasks`            | Stores tasks and sub-tasks (self-referencing FK) |
 | `developer_skills` | Many-to-many relationship: developers ↔ skills |
 | `task_skills`      | Many-to-many relationship: tasks ↔ skills  |
+
+### Logging
+
+The application uses **Winston** for structured logging with the following setup:
+
+- **Console transport** — Colorized output for real-time terminal visibility.
+- **File transport (error.log)** — Captures all `error`-level logs for operational monitoring.
+- **File transport (combined.log)** — Captures `info` and above for general audit trail.
+- **Log rotation** — Each file is capped at 5 MB with up to 5 rotated archives kept, preventing disk exhaustion.
+- **Environment-aware** — Log level defaults to `debug` in development and `info` in production.
+
+All log files are stored in `logs/` and ignored by version control.
 
 ### Security
 
@@ -324,5 +338,6 @@ Creates a task and optionally nested sub-tasks atomically.
 | **ajv**            | JSON schema validation                                                  | Fastest JSON validator for Node.js; used to validate request bodies and LLM responses |
 | **helmet**         | Security HTTP headers                                                   | Standard Express security middleware; sets Content-Security-Policy, X-Frame-Options, etc. |
 | **dotenv**         | Environment variable loading                                            | Simple, zero-dependency `.env` file loading |
+| **winston**        | Structured logging                                                      | Industry-standard Node.js logger; supports multiple transports (console + file), log levels, and auto-rotation out of the box |
 | **tsx**            | TypeScript execution for scripts and dev server                         | Fast TypeScript runner using esbuild; handles ESM natively; replaces ts-node for both `dev` and `seed` scripts |
 | **typescript**     | Type checking and compilation                                           | Provides static typing, interfaces, and type safety across the codebase |

@@ -165,6 +165,7 @@ The app starts at `http://localhost:3000`.
 | **OpenAI SDK**   | ^6.49.0   | AI-powered skill classification |
 | **AJV**          | ^8.20.0   | JSON schema validation          |
 | **Helmet**       | ^8.3.0    | Security HTTP headers           |
+| **Winston**      | ^3        | Structured logging (console + file with rotation) |
 
 ### Frontend
 
@@ -284,6 +285,7 @@ Frontend                          Backend                           Database
 - **Docker non-root user** reduces the attack surface in production deployments.
 - **API key** is required for OpenAI — the backend will not start without `OPENAI_API_KEY`.
 - **Foreign key enforcement** at the database level ensures referential integrity.
+- **Structured logging** via Winston with console output and auto-rotating log files. Error-level logs are stored separately for operational monitoring.
 
 ---
 

@@ -3,6 +3,7 @@ import { buildSkillClassificationPrompt } from "./prompt.js";
 import { validate } from "./schema.js";
 import { openai } from "../../config/openai.js";
 import { config } from "../../config/env.js";
+import { logger } from "../../config/logger.js";
 
 export class SkillClassificationAgent {
     async run(title: string, availableSkills: string[]): Promise<SkillClassificationResponse> {
@@ -17,10 +18,10 @@ export class SkillClassificationAgent {
 
         // Parse response
         const parsed = JSON.parse(response.output_text) as SkillClassificationResponse;
-        console.log(parsed);
 
         // Validate
         if (!validate(parsed)) {
+            logger.error("Invalid LLM response format", { response: parsed });
             throw new Error("Invalid LLM response");
         }
 

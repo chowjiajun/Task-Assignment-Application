@@ -1,5 +1,6 @@
 import { db } from "./index.js";
 import { developers, skills } from "./schema.js";
+import { logger } from "../../config/logger.js";
 
 async function seed() {
     // Insert developers
@@ -16,12 +17,12 @@ async function seed() {
         { name: "Backend" },
     ]).onConflictDoNothing();
 
-    console.log("Database seeded successfully");
+    logger.info("Database seeded successfully");
 }
 
 try {
     await seed();
 } catch (error) {
-    console.error("Error during seeding:", error);
+    logger.error("Error during seeding", { error });
     process.exit(1);
 }

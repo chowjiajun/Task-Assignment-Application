@@ -5,7 +5,7 @@ import { useForm } from '@mantine/form';
 import { useFetch } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { apiUrl, extractApiError } from '@/utils/api';
-import type { Developer, Skill } from '@/types/api';
+import type { Developer, Skill, CreateTaskResponse } from '@/types/api';
 import { TaskInput } from './TaskInput';
 import { type TaskInputField, type FormValues } from './types';
 
@@ -59,9 +59,19 @@ export default function AddTaskModal({ opened, close, refetch }: Readonly<{ open
 
             if (!response.ok) throw new Error(await extractApiError(response));
 
+            const body: CreateTaskResponse = await response.json();
+
             form.reset();
             close();
             refetch();
+
+            if (body.assignmentRemoved) {
+                notifications.show({
+                    color: 'yellow',
+                    title: 'Task created — assignment removed',
+                    message: 'The assigned developer did not have the required skills. The task was created unassigned — please reassign it.',
+                });
+            }
         } catch (error) {
             notifications.show({
                 color: 'red',

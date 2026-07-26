@@ -1,0 +1,2 @@
+ALTER TABLE "developer_skills" DROP CONSTRAINT "developer_skills_pkey";--> statement-breakpoint
+ALTER TABLE "developer_skills" ADD CONSTRAINT "developer_skills_developer_id_skill_id_pk" PRIMARY KEY("developer_id","skill_id");

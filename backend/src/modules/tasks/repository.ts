@@ -143,3 +143,9 @@ export async function getSubTasksByParentId(parentTaskId: number) {
 
     return subTasks;
 }
+
+export async function getTaskSkillsByTaskId(taskId: number) {
+    return await db.select({
+        skillName: taskSkills.skillName,
+    }).from(taskSkills).where(eq(taskSkills.taskId, taskId));
+}

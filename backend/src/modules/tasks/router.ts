@@ -5,7 +5,7 @@ import type { CreateTaskRequest, UpdateTaskRequest } from './types.js';
 import { CREATE_TASK_REQUEST_SCHEMA, UPDATE_TASK_REQUEST_SCHEMA } from './validation.js';
 import { validateBody } from '../../middlewares/validate-request.js';
 import { createTask, getAllTasks, getTaskById, getTaskStatuses, updateTaskById } from './service.js';
-import { InvalidSkillsError, SubTasksNotDoneError } from './errors.js';
+import { InvalidSkillsError, SubTasksNotDoneError, DeveloperMissingSkillsError } from './errors.js';
 import { PostgresForeignKeyViolationError } from '../../errors/database.js';
 
 const router = express.Router();
@@ -26,7 +26,16 @@ router.get('/list', async (_req: Request, res: Response, next: NextFunction) => 
 router.post('/create', validateBody<CreateTaskRequest>(CREATE_TASK_REQUEST_SCHEMA), async (req: Request, res: Response, next: NextFunction) => {
     const taskData: CreateTaskRequest = req.body;
     try {
-        await createTask(taskData);
+        const result = await createTask(taskData);
+
+        if (result?.assignmentRemoved) {
+            return res.status(HTTP_200).json({
+                message: 'Task created successfully, but the assigned developer does not have the required skills. The task has been created unassigned.',
+                assignmentRemoved: true,
+            });
+        }
+
+        return res.status(HTTP_200).json({ message: 'Task created successfully' });
     } catch (error) {
         if (error instanceof InvalidSkillsError) {
             return res.status(HTTP_400).json({ error: error.message });
@@ -36,7 +45,6 @@ router.post('/create', validateBody<CreateTaskRequest>(CREATE_TASK_REQUEST_SCHEM
             next(error);
         }
     }
-    return res.status(HTTP_200).json({ message: 'Task created successfully' });
 });
 
 router.get('/:id', async (req: Request, res: Response) => {
@@ -72,6 +80,8 @@ router.patch('/update/:id', validateBody<UpdateTaskRequest>(UPDATE_TASK_REQUEST_
         if (error instanceof PostgresForeignKeyViolationError) {
             return res.status(HTTP_400).json({ error: 'Assigned developer does not exist' });
         } else if (error instanceof SubTasksNotDoneError) {
+            return res.status(HTTP_400).json({ error: error.message });
+        } else if (error instanceof DeveloperMissingSkillsError) {
             return res.status(HTTP_400).json({ error: error.message });
         } else {
             next(error);

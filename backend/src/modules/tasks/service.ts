@@ -4,26 +4,55 @@ import {
     getAllTasks as getAllTasksInRepository,
     getSubTasksByParentId,
     getTaskById as getTaskByIdInRepository,
+    getTaskSkillsByTaskId,
     updateTaskById as updateTaskByIdInRepository,
 } from "./repository.js";
 import { getAllSkills } from "../skills/service.js";
-import { InvalidSkillsError, SubTasksNotDoneError } from "./errors.js";
+import { getDeveloperSkills } from "../developers/service.js";
+import { InvalidSkillsError, SubTasksNotDoneError, DeveloperMissingSkillsError } from "./errors.js";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { DatabaseError } from "pg";
 import { FOREIGN_KEY_VIOLATION } from "../../constants/postgres-error-codes.js";
 import { PostgresForeignKeyViolationError } from "../../errors/database.js";
 import { TASK_STATUS, type TaskStatus } from "./constants.js";
 import { skillClassificationAgent } from "../../agents/skill-classification-agent/agent.js";
+import { logger } from "../../config/logger.js";
 
 
 export async function createTask(taskData: CreateTaskRequest) {
+    // Check if the provided skills exist in the database
     const allSkills = await getAllSkills();
     const availableSkills = new Set(allSkills.map(skill => skill.name));
     validateTaskSkills(taskData, availableSkills);
+
+    // Classify the task and its sub-tasks to determine required skills if not provided
     await classifyTaskSkills(taskData);
+
+    // After classification, check if the assigned developer has the required skills.
+    // If not, clear the assignment and let the caller know so the user can reassign later.
+    let assignmentRemoved = false;
+    if (taskData.assignedTo) {
+        const hasSkills = await checkDeveloperSkills(taskData.assignedTo, taskData.skillsRequired);
+        if (!hasSkills) {
+            taskData.assignedTo = null;
+            assignmentRemoved = true;
+            logger.warn("Cleared task assignment — developer lacks required skills after classification", {
+                taskTitle: taskData.title,
+            });
+        }
+    }
+
+    // Also check nested sub-tasks
+    if (taskData.subTasks) {
+        for (const subTask of taskData.subTasks) {
+            const subResult = await clearInvalidAssignmentsRecursive(subTask);
+            if (subResult) assignmentRemoved = true;
+        }
+    }
 
     try {
         await createTaskWithSubTasks(taskData);
+        return { assignmentRemoved };
     } catch (error) {
         // Drizzle doesnt throw a specific error for foreign key violations, so we need to check the error code from the underlying database error
         if (error instanceof DrizzleQueryError) {
@@ -36,6 +65,38 @@ export async function createTask(taskData: CreateTaskRequest) {
             throw error;
         }
     }
+}
+
+async function checkDeveloperSkills(developerId: number, requiredSkills: string[]): Promise<boolean> {
+    if (requiredSkills.length === 0) return true;
+
+    // Retrieve the skills of the developer from the database
+    const developerSkillNames = await getDeveloperSkills(developerId);
+    const developerSkillSet = new Set(developerSkillNames);
+
+    // Check if the developer has all the required skills
+    return requiredSkills.every(skill => developerSkillSet.has(skill));
+}
+
+async function clearInvalidAssignmentsRecursive(taskData: CreateTaskRequest): Promise<boolean> {
+    let cleared = false;
+
+    if (taskData.assignedTo) {
+        const hasSkills = await checkDeveloperSkills(taskData.assignedTo, taskData.skillsRequired);
+        if (!hasSkills) {
+            taskData.assignedTo = null;
+            cleared = true;
+        }
+    }
+
+    if (taskData.subTasks) {
+        for (const subTask of taskData.subTasks) {
+            const subResult = await clearInvalidAssignmentsRecursive(subTask);
+            if (subResult) cleared = true;
+        }
+    }
+
+    return cleared;
 }
 
 function validateTaskSkills(taskData: CreateTaskRequest, availableSkills: Set<string>): void {
@@ -115,6 +176,18 @@ export async function updateTaskById(id: number, taskData: UpdateTaskRequest) {
 
         if (incompleteSubTasks.length > 0) {
             throw new SubTasksNotDoneError("Cannot mark parent task as done while it has incomplete sub-tasks.");
+        }
+    }
+
+    // If the assignee is being changed, validate they have the required skills
+    if (taskData.assignedTo !== undefined && taskData.assignedTo !== null) {
+        const task = await getTaskByIdInRepository(id);
+        if (task) {
+            const taskSkills = await getTaskSkillsByTaskId(id);
+            const hasSkills = await checkDeveloperSkills(taskData.assignedTo, taskSkills.map(s => s.skillName).filter((s): s is string => s !== null));
+            if (!hasSkills) {
+                throw new DeveloperMissingSkillsError("The assigned developer does not have all the required skills for this task.");
+            }
         }
     }
 

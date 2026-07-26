@@ -179,8 +179,7 @@ When a task is created **without** specifying required skills, the system invoke
 
 1. Sends the task title and the list of available skills to OpenAI.
 2. Parses the JSON response.
-3. Validates the response structure using an AJV schema.
-4. Validates the response structure using an AJV schema and throws if malformed.
+3. Validates the JSON response structure using an AJV schema and throws if malformed.
 
 This allows the system to auto-tag tasks with relevant skills, reducing manual data entry.
 
@@ -232,6 +231,13 @@ All log files are stored in `logs/` and ignored by version control.
 - **Input validation** — All request bodies are validated against JSON schemas using AJV before reaching business logic.
 - **CORS** — Enabled only in `development` mode.
 - **Non-root user** — The Docker image runs the application as a non-root user.
+
+### Skill-Constrained Assignment
+
+The backend enforces the rule that **a task can only be assigned to a developer with all the required skills**:
+
+- When **creating** a task with a specified assignee, the service checks that the developer possesses every skill in the task's `skillsRequired` list. If the developer lacks the required skills (e.g., after AI auto-classification), the assignment is **silently cleared** and the response includes `assignmentRemoved: true` so the frontend can notify the user.
+- When **updating** (`PATCH /tasks/update/:id`), if the new assignee lacks the required skills, a `400 Bad Request` is returned with a message like `"The assigned developer does not have all the required skills for this task."`
 
 ---
 
@@ -304,6 +310,21 @@ Creates a task and optionally nested sub-tasks atomically.
 - If `skillsRequired` is an empty array, the system calls OpenAI to automatically classify the required skills.
 - The `status` must be one of: `"To-do"`, `"In progress"`, `"Done"`.
 - All nested sub-tasks are created recursively in a single transaction.
+
+**Response (success):**
+```json
+{
+  "message": "Task created successfully"
+}
+```
+
+**Response (assignment removed by auto-classification):**
+```json
+{
+  "message": "Task created successfully, but the assigned developer does not have the required skills. The task has been created unassigned.",
+  "assignmentRemoved": true
+}
+```
 
 #### `PATCH /tasks/update/:id`
 

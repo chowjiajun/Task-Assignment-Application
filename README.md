@@ -84,7 +84,7 @@ The fastest way to run the full stack:
 
    Visit [http://localhost:3000](http://localhost:3000).
 
-5. **Seed the database** (optional, provides initial developers and skills)
+5. **Seed the database** (optional, populates developers, skills, and developer-skill mappings)
 
    ```bash
    docker compose exec backend npm run seed
@@ -257,6 +257,8 @@ Frontend                          Backend                           Database
   │                                │  Validate skills exist           │
   │                                │  Classify skills (if empty)      │
   │                                │  ──► OpenAI API                  │
+  │                                │  Check developer has required    │
+  │                                │  skills (clear assign if not)    │
   │                                │  BEGIN TRANSACTION               │
   │                                │  ───────────────────────────────►│
   │                                │  Insert parent task              │
@@ -264,7 +266,7 @@ Frontend                          Backend                           Database
   │                                │  Insert sub-tasks (recursive)    │
   │                                │  COMMIT                          │
   │                                │◄─────────────────────────────────│
-  │  201 Created                   │                                  │
+  │  200 OK                        │                                  │
   │◄───────────────────────────────│                                  │
   │                                │                                  │
   │  GET /tasks/list               │                                  │
@@ -285,6 +287,7 @@ Frontend                          Backend                           Database
 - **Docker non-root user** reduces the attack surface in production deployments.
 - **API key** is required for OpenAI — the backend will not start without `OPENAI_API_KEY`.
 - **Foreign key enforcement** at the database level ensures referential integrity.
+- **Skill-constrained assignment** — Tasks can only be assigned to developers who possess all required skills. On create, the assignment is softly cleared if it doesn't match; on update, a `400` error is returned.
 - **Structured logging** via Winston with console output and auto-rotating log files. Error-level logs are stored separately for operational monitoring.
 
 ---

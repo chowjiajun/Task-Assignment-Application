@@ -1,6 +1,13 @@
 import { config } from '../config/env.js'
 import type { Request, Response, NextFunction } from 'express';
 
+/**
+ * CORS middleware for handling cross-origin requests in development environment
+ * @param req The Express request object
+ * @param res The Express response object
+ * @param next The next middleware function
+ * @returns void
+ */
 export function corsMiddleware(req: Request, res: Response, next: NextFunction) {
     // Only allow CORS in development environment
     if (config.ENVIRONMENT === 'development') {

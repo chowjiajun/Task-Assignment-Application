@@ -7,6 +7,11 @@ import type { NextFunction, Request, Response } from "express";
 
 const ajv = new Ajv({ allErrors: true, strict: true });
 
+/**
+ * Middleware for validating request bodies against a JSON schema.
+ * @param schema The JSON schema to validate against
+ * @returns An Express middleware function
+ */
 export function validateBody<T>(schema: JSONSchemaType<T>) {
     return (req: Request, res: Response, next: NextFunction) => {
         try {

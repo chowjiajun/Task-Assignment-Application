@@ -3,6 +3,14 @@ import { HTTP_500 } from '../constants/http-status.js';
 import { INTERNAL_SERVER_ERROR } from '../constants/error-messages.js';
 import { logger } from '../config/logger.js';
 
+/**
+ * Global error handling middleware for Express.
+ * @param err The error object
+ * @param req The Express request object
+ * @param res The Express response object
+ * @param next The next middleware function
+ * @returns void
+ */
 export function globalErrorHandler(err: any, req: Request, res: Response, next: NextFunction) {
     logger.error("Global unhandled error", { 
         error: err.message, 

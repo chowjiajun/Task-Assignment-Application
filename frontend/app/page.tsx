@@ -1,6 +1,6 @@
 'use client'
 
-import Shell from "@/components/Shell/Shell";
+import Shell from "@/components/Shell-rename/Shell";
 import TaskListing from "@/components/TaskListing/TaskListing";
 import { apiUrl } from "@/utils/api";
 import { useFetch } from "@mantine/hooks";

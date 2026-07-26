@@ -25,14 +25,14 @@ export default function AddTaskModal({ opened, close, refetch }: Readonly<{ open
         if (hasFetchError) {
             notifications.show({
                 color: 'red',
-                title: 'Failed to load form data',
+                title: 'Failed to load data',
                 message: 'Could not fetch required data. Please try again later.',
             });
         }
     }, [hasFetchError]);
 
     // Recursively strip frontend-only fields (id, subTasks nesting) for the API
-    const toAPIBody = (subTasks: TaskInputField[]): object[] =>
+    const toAPIBody = (subTasks: TaskInputField[]): Record<string, unknown>[] =>
         subTasks.map(({ title, skillsRequired, assignedTo, subTasks: nested }) => ({
             title,
             status: 'To-do',

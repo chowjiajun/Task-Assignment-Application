@@ -6,6 +6,9 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
  * @returns The full URL as a string
  */
 export function apiUrl(path: string): string {
+    if (!BASE_URL) {
+        throw new Error("NEXT_PUBLIC_API_URL is not defined");
+    }
     return `${BASE_URL}${path}`;
 }
 

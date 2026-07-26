@@ -39,7 +39,7 @@ export default function TaskRow({ task, statusOptions, assigneeOptions, updateTa
                 </Table.Td>
                 <Table.Td>
                     <Select
-                        data={statusOptions ?? []}
+                        data={statusOptions}
                         value={task.status}
                         onChange={(value) => handleUpdate({ ...task, status: value ?? '' })}
                         w="100%"

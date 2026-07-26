@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, timestamp, primaryKey } from "drizzle-orm/pg-core";
 
 export const developers = pgTable("developers", {
     id: serial("id").primaryKey(),
@@ -25,11 +25,13 @@ export const skills = pgTable("skills", {
 });
 
 export const developerSkills = pgTable("developer_skills", {
-    developerId: serial("developer_id").references(() => developers.id),
-    skillId: varchar("skill_id", { length: 255 }).references(() => skills.name),
+    developerId: integer("developer_id").notNull().references(() => developers.id),
+    skillId: varchar("skill_id", { length: 255 }).notNull().references(() => skills.name),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+    primaryKey({ columns: [table.developerId, table.skillId] }),
+]);
 
 export const taskSkills = pgTable("task_skills", {
     taskId: integer("task_id").references(() => tasks.id),

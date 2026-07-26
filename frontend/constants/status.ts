@@ -1,1 +1,0 @@
-export const STATUS_TO_DO = "To-do";

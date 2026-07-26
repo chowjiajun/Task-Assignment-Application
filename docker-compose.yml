@@ -29,7 +29,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_NAME: ${DATABASE_NAME:-task_assignment}
       OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-nano-2025-08-07}
     ports:
       - "${EXPRESS_PORT:-8080}:8080"
     depends_on:

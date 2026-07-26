@@ -15,7 +15,7 @@ export default function Shell({ children, refetch }: Readonly<{ children: ReactN
                     <Title order={3}>Task Assignment Application</Title>
 
                     {/* Modal for adding new tasks */}
-                    <ActionIcon variant="transparent" aria-label="Settings" onClick={open}>
+                    <ActionIcon variant="transparent" aria-label="Add task" onClick={open}>
                         <PlusIcon style={{ width: '70%', height: '70%' }} />
                     </ActionIcon>
 

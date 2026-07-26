@@ -16,3 +16,8 @@ export interface Task {
     skillsRequired: string[];
     subTasks: Task[];
 }
+
+export interface CreateTaskResponse {
+    message: string;
+    assignmentRemoved?: boolean;
+}

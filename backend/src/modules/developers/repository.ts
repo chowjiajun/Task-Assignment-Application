@@ -1,4 +1,4 @@
-import { db } from "../../infrastructure/database/index.js"
+import { db } from "../../infrastructure/database/index.js";
 
 export async function retrieveAllDevelopers() {
     return await db.query.developers.findMany();

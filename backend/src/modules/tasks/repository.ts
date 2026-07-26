@@ -3,7 +3,9 @@ import { tasks, taskSkills } from "../../infrastructure/database/schema.js";
 import { eq, desc } from "drizzle-orm";
 import type { CreateTaskRequest, UpdateTaskRequest } from "./types.js";
 
-async function insertSubTasksRecursively(tx: any, parentId: number, subTasks: any[] | null | undefined) {
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function insertSubTasksRecursively(tx: DbTransaction, parentId: number, subTasks: CreateTaskRequest[] | null | undefined) {
     if (!subTasks || subTasks.length === 0) return;
 
     for (const subTask of subTasks) {

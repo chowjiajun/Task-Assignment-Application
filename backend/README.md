@@ -180,7 +180,7 @@ When a task is created **without** specifying required skills, the system invoke
 1. Sends the task title and the list of available skills to OpenAI.
 2. Parses the JSON response.
 3. Validates the response structure using an AJV schema.
-4. Falls back gracefully if the LLM response is malformed.
+4. Validates the response structure using an AJV schema and throws if malformed.
 
 This allows the system to auto-tag tasks with relevant skills, reducing manual data entry.
 

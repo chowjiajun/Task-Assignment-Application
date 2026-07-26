@@ -17,7 +17,9 @@ import { skillClassificationAgent } from "../../agents/skill-classification-agen
 
 
 export async function createTask(taskData: CreateTaskRequest) {
-    await validateTaskSkills(taskData);
+    const allSkills = await getAllSkills();
+    const availableSkills = new Set(allSkills.map(skill => skill.name));
+    validateTaskSkills(taskData, availableSkills);
     await classifyTaskSkills(taskData);
 
     try {
@@ -36,36 +38,16 @@ export async function createTask(taskData: CreateTaskRequest) {
     }
 }
 
-async function validateTaskSkills(taskData: CreateTaskRequest) {
-    // Seperating the first level of skills because we have to retrieve all skills from the database 
-    const results = await getAllSkills();
-    const availableSkills = new Set(results.map(skill => skill.name));
-
-    // Validate main task's required skills
+function validateTaskSkills(taskData: CreateTaskRequest, availableSkills: Set<string>): void {
     for (const skill of taskData.skillsRequired) {
         if (!availableSkills.has(skill)) {
             throw new InvalidSkillsError(`The following skills do not exist: ${skill}`);
         }
     }
 
-    // Validate all nested sub-task skills recursively
-    if (taskData.subTasks && taskData.subTasks.length > 0) {
-        for (let i = 0; i < taskData.subTasks.length; i++) {
-            validateSubTaskSkillsRecursive(taskData.subTasks[i]!, availableSkills, `sub-task ${i + 1}`);
-        }
-    }
-}
-
-function validateSubTaskSkillsRecursive(subTask: CreateTaskRequest, availableSkills: Set<string>, path: string = "sub-task"): void {
-    for (const skill of subTask.skillsRequired) {
-        if (!availableSkills.has(skill)) {
-            throw new InvalidSkillsError(`The following skills do not exist in ${path}: ${skill}`);
-        }
-    }
-
-    if (subTask.subTasks && subTask.subTasks.length > 0) {
-        for (let i = 0; i < subTask.subTasks.length; i++) {
-            validateSubTaskSkillsRecursive(subTask.subTasks[i]!, availableSkills, `${path} (nested level ${i + 1})`);
+    if (taskData.subTasks) {
+        for (const subTask of taskData.subTasks) {
+            validateTaskSkills(subTask, availableSkills);
         }
     }
 }
